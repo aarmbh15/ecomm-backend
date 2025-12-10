@@ -6,36 +6,147 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use App\Mail\WelcomeMail;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
+    // public function register(Request $request)
+    // {
+    //     // Validation
+    //     $validator = Validator::make($request->all(), [
+    //         'first_name' => 'required|string|max:255',
+    //         'last_name'  => 'required|string|max:255',
+    //         'email'      => 'required|string|email|max:255|unique:users',
+    //         'password'   => 'required|string|min:6',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'errors' => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     // Create user
+    //     $user = User::create([
+    //         'first_name' => $request->first_name,
+    //         'last_name'  => $request->last_name,
+    //         'email'      => $request->email,
+    //         'password'   => $request->password, // will be hashed automatically
+    //     ]);
+
+    //     return response()->json([
+    //         'message' => 'User registered successfully',
+    //         'user'    => $user,
+    //     ], 201);
+    // }
+
     public function register(Request $request)
     {
-        // Validation
-        $validator = Validator::make($request->all(), [
+        // $start = microtime(true); // Start time
+        
+        // Step 1: Validate input fields
+        $request->validate([
             'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255',
-            'email'      => 'required|string|email|max:255|unique:users',
-            'password'   => 'required|string|min:6',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
+        // Step 2: Auto-generate a random password
+        $generatedPassword = Str::random(8); // You can adjust the length of the password
+
+        function generatePassword($length = 8)
+        {
+            $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#';
+            return substr(str_shuffle(str_repeat($characters, $length)), 0, $length);
         }
 
-        // Create user
+        $generatedPassword = generatePassword(8);
+
+        // Step 3: Hash the password before saving it to the database
+        $hashedPassword = Hash::make($generatedPassword);
+
+        // Step 4: Create the user with the auto-generated password
+        // $user = User::registerNewUser($request->first_name, $request->last_name, $request->email, $hashedPassword);
         $user = User::create([
             'first_name' => $request->first_name,
             'last_name'  => $request->last_name,
             'email'      => $request->email,
-            'password'   => $request->password, // will be hashed automatically
+            'password'   => $hashedPassword, // will be hashed automatically
         ]);
 
+        // Step 5: Send an email with the generated password
+        Mail::to($request->email)->send(new WelcomeMail($request->first_name, $request->last_name, $request->email, $generatedPassword));
+
+        // $end = microtime(true); // End time
+        // Log::info('registerUser process took: ' . ($end - $start) . ' seconds');
+
+        // Step 6: Redirect with success message
         return response()->json([
-            'message' => 'User registered successfully',
-            'user'    => $user,
+            'message' => 'Account created successfully! Password sent to email.'
         ], 201);
+
+    }
+
+     public function login(Request $request)
+    // {
+    //     // Validate input
+    //     $request->validate([
+    //         'email' => 'required|email',
+    //         'password' => 'required|string',
+    //     ]);
+
+    //     $credentials = $request->only('email', 'password');
+
+    //     if (Auth::attempt($credentials)) {
+    //         // Regenerate session
+    //         $request->session()->regenerate();
+
+    //         return response()->json([
+    //             'message' => 'Login successful',
+    //             'user' => Auth::user(),
+    //         ], 200);
+    //     }
+
+    //     return response()->json([
+    //         'message' => 'Invalid credentials',
+    //     ], 401);
+    // }
+
+    {
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user || !Hash::check($request->password, $user->password)) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+
+    // Create token
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'message' => 'Login successful',
+        'user' => $user,
+        'token' => $token
+    ], 200);
+}
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json([
+            'message' => 'Logged out successfully',
+        ]);
     }
 }
