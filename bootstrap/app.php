@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,11 +15,28 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
-        $middleware->use([
-            // Global middleware list including CORS
-            \App\Http\Middleware\CorsMiddleware::class,
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+        
+        // This automatically applies EnsureFrontendRequestsAreStateful
+        // to stateful routes (including /sanctum/csrf-cookie) and handles the SPA logic correctly
+        $middleware->statefulApi();
+
+        $middleware->alias([
+            'throttle' => ThrottleRequests::class,
         ]);
+        
+        // $middleware->use([
+        //     // Global middleware list including CORS
+        //     // \App\Http\Middleware\CorsMiddleware::class,
+        //     // 'throttle:api',
+        //     \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        // ]);
+
+        // // Apply to API routes only
+        // $middleware->api(prepend: [
+        //     \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+        // ]); 
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -2,49 +2,96 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; 
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<string>
      */
     protected $fillable = [
         'first_name',
         'last_name',
         'email',
         'password',
+        'phone',
+        'gender',
+        'type',
+        'photo',
+        'status',
+        'activate_code',
+        'reset_code',
+        'created_at',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<string>
      */
     protected $hidden = [
         'password',
-        'remember_token',
+        'activate_code',
+        'reset_code',
+        'remember_token', // kept in case you use remember me functionality later
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            // 'email_verified_at' => 'datetime', // kept for potential future use (Laravel default)
             'password' => 'hashed',
+            'status' => 'boolean',
+            'type' => 'integer',           // tinyInteger is cast to integer
+            // 'created_at' => 'date',        // date column
+            'created_at' => 'datetime',    // from timestamps()
+            'updated_at' => 'datetime',    // from timestamps()
         ];
+    }
+
+    /**
+     * Override the default timestamp columns if needed.
+     * Not strictly required here since you use standard timestamps(),
+     * but kept for clarity.
+     */
+    // public function getCreatedAtAttribute($value)
+    // {
+    //     return $value; // standard created_at from timestamps()
+    // }
+
+    /**
+     * Optional: Accessor for full name
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
+    }
+
+    /**
+     * Optional: Scope for active users
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', true);
+    }
+
+    /**
+     * Optional: Scope for admins
+     */
+    public function scopeAdmin($query)
+    {
+        return $query->where('type', 1);
     }
 }

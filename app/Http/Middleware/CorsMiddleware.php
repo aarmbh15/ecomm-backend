@@ -38,24 +38,55 @@ class CorsMiddleware
     //     return $response;
     // }
 
+    // {
+    //     // Handle preflight OPTIONS requests immediately
+    //     if ($request->getMethod() === 'OPTIONS') {
+    //         return response('', 200)
+    //             ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+    //             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    //             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    //             ->header('Access-Control-Allow-Credentials', 'true');
+    //     }
+
+    //     // Handle normal requests
+    //     $response = $next($request);
+
+    //     // Add CORS headers to actual response
+    //     return $response
+    //         ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
+    //         ->header('Access-Control-Allow-Credentials', 'true')
+    //         ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    //         ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // }
+
     {
-    // Handle preflight OPTIONS requests immediately
-    if ($request->getMethod() === 'OPTIONS') {
-        return response('', 200)
-            ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
-            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            ->header('Access-Control-Allow-Credentials', 'true');
+        $origin = $request->headers->get('Origin');
+
+        // Only allow your React origin
+        $allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+        if (in_array($origin, $allowedOrigins)) {
+            $headers = [
+                'Access-Control-Allow-Origin' => $origin,
+                'Access-Control-Allow-Methods' => 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, X-XSRF-TOKEN',
+                'Access-Control-Allow-Credentials' => 'true',
+            ];
+        } else {
+            $headers = [];
+        }
+
+        // Handle preflight
+        if ($request->getMethod() === 'OPTIONS') {
+            return response('', 200)->withHeaders($headers);
+        }
+
+        $response = $next($request);
+
+        foreach ($headers as $key => $value) {
+            $response->headers->set($key, $value);
+        }
+
+        return $response;
     }
-
-    // Handle normal requests
-    $response = $next($request);
-
-    // Add CORS headers to actual response
-    return $response
-        ->header('Access-Control-Allow-Origin', 'http://localhost:5173')
-        ->header('Access-Control-Allow-Credentials', 'true')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-}
 }
