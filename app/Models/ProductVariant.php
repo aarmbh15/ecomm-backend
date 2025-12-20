@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ProductVariant extends Model
 {
@@ -44,11 +46,11 @@ class ProductVariant extends Model
      * The virtual columns we can use directly in queries
      * (Laravel will use them automatically when you write ->where('color', 'Black'))
      */
-    protected $appends = [
-        'size',
-        'color',
-        'material',
-    ];
+    // protected $appends = [
+    //     'size',
+    //     'color',
+    //     'material',
+    // ];
 
     /**
      * Get the product this variant belongs to
@@ -101,7 +103,7 @@ class ProductVariant extends Model
     /**
      * Get images specifically attached to this variant
      */
-    public function images(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class, 'variant_id')->ordered();
     }
@@ -109,7 +111,7 @@ class ProductVariant extends Model
     /**
      * Get the primary image for this variant (if set)
      */
-    public function primaryImage(): \Illuminate\Database\Eloquent\Relations\HasOne
+    public function primaryImage(): HasOne
     {
         return $this->hasOne(ProductImage::class, 'variant_id')->primary()->ordered();
     }

@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Auth\Passwords\CanResetPassword;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
+use App\Notifications\CustomResetPasswordNotification;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens, CanResetPassword;
 
     /**
      * The attributes that are mass assignable.
@@ -27,7 +30,7 @@ class User extends Authenticatable
         'photo',
         'status',
         'activate_code',
-        'reset_code',
+        // 'reset_code',
         'created_at',
     ];
 
@@ -39,7 +42,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'activate_code',
-        'reset_code',
+        // 'reset_code',
         'remember_token', // kept in case you use remember me functionality later
     ];
 
@@ -93,5 +96,17 @@ class User extends Authenticatable
     public function scopeAdmin($query)
     {
         return $query->where('type', 1);
+    }
+
+    // Required by CanResetPassword trait
+    public function getEmailForPasswordReset()
+    {
+        return $this->email;
+    }
+
+    public function sendPasswordResetNotification($token)
+    {
+        // $this->notify(new \App\Notifications\CustomResetPasswordNotification($token));
+        $this->notify(new CustomResetPasswordNotification($token));
     }
 }
