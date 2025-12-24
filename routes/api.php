@@ -6,6 +6,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\UserAddressController;
+use App\Http\Controllers\OrderController;
 use Illuminate\Support\Facades\Password;
 
 Route::get('/debug-session', function () {
@@ -29,6 +31,18 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user', [UserController::class, 'show']);
+    Route::patch('/user/update', [UserController::class, 'update']);
+    Route::post('/user/update-photo', [UserController::class, 'updatePhoto']);
+
+    Route::get('/user/addresses', [UserAddressController::class, 'index']);
+    
+    Route::post('/user/addresses', [UserAddressController::class, 'store']);
+    Route::patch('/user/addresses/{id}', [UserAddressController::class, 'update']);
+    
+    Route::patch('/user/addresses/{id}/default', [UserAddressController::class, 'setDefault']);
+    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']);
+
+    Route::get('/user/orders', [OrderController::class, 'index']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
 

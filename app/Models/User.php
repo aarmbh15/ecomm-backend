@@ -109,4 +109,14 @@ class User extends Authenticatable
         // $this->notify(new \App\Notifications\CustomResetPasswordNotification($token));
         $this->notify(new CustomResetPasswordNotification($token));
     }
+
+    public function addresses()
+    {
+        return $this->hasMany(UserAddress::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }
